@@ -1,0 +1,11 @@
+/* style.css */
+/* …all your existing CSS… */
+
+.lang-select-container {
+  margin-left: 1rem;
+}
+#lang-select {
+  padding: 0.25rem;
+  border-radius: 4px;
+  border: 1px solid var(--gray-dark);
+}
