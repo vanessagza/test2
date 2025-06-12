@@ -1,6 +1,5 @@
 // script.js
-let t; // translation object
-
+let t;                              // holds your current language JSON
 const navList     = document.getElementById('nav-list');
 const footerNav   = document.getElementById('footer-nav');
 const mainContent = document.getElementById('main-content');
@@ -8,7 +7,7 @@ const yearSpan    = document.getElementById('year');
 const logoLink    = document.getElementById('logo-link');
 const langSelect  = document.getElementById('lang-select');
 
-// remember language
+// load saved language or default
 const savedLang = localStorage.getItem('lang') || 'en';
 langSelect.value = savedLang;
 
@@ -18,8 +17,16 @@ langSelect.addEventListener('change', () => {
 });
 
 async function loadTranslations(lang) {
-  const res = await fetch(`translations/${lang}.json`);
-  t = await res.json();
+  try {
+    const res = await fetch(`./translations/${lang}.json`);
+    if (!res.ok) throw new Error('Translation file not found');
+    t = await res.json();
+  } catch (err) {
+    console.error(err);
+    // fallback to English
+    const res = await fetch(`./translations/en.json`);
+    t = await res.json();
+  }
   init();
 }
 
@@ -123,11 +130,20 @@ function renderHome() {
 
 function initCarousel() {
   const slides = document.querySelector('.slides');
-  const imgs = slides.children;
-  let idx = 0, total = imgs.length;
-  document.querySelector('.prev').onclick = () => { idx=(idx-1+total)%total; slides.style.transform=`translateX(-${100*idx}%)`; };
-  document.querySelector('.next').onclick = () => { idx=(idx+1)%total; slides.style.transform=`translateX(-${100*idx}%)`; };
-  setInterval(()=>{ idx=(idx+1)%total; slides.style.transform=`translateX(-${100*idx}%)`; },5000);
+  const total  = slides.children.length;
+  let idx = 0;
+  document.querySelector('.prev').onclick = () => {
+    idx = (idx - 1 + total) % total;
+    slides.style.transform = `translateX(-${idx * 100}%)`;
+  };
+  document.querySelector('.next').onclick = () => {
+    idx = (idx + 1) % total;
+    slides.style.transform = `translateX(-${idx * 100}%)`;
+  };
+  setInterval(() => {
+    idx = (idx + 1) % total;
+    slides.style.transform = `translateX(-${idx * 100}%)`;
+  }, 5000);
 }
 
 function renderAbout() {
@@ -149,33 +165,33 @@ function renderServices() {
     <input id="service-search" class="service-search" placeholder="${c.searchPlaceholder}">
     <div id="services-grid" class="services-grid"></div>
   `;
-  const grid = document.getElementById('services-grid');
-  document.getElementById('service-search').oninput = e => populate(e.target.value);
+  const grid   = document.getElementById('services-grid');
+  const search = document.getElementById('service-search');
   function populate(filter='') {
     grid.innerHTML = t.services
-      .filter(s=>s.name.toLowerCase().includes(filter.toLowerCase()))
-      .map(s=>`<div class="service-card"><h3>${s.name}</h3><p>${s.description}</p></div>`)
+      .filter(s => s.name.toLowerCase().includes(filter.toLowerCase()))
+      .map(s => `<div class="service-card"><h3>${s.name}</h3><p>${s.description}</p></div>`)
       .join('');
   }
   populate();
+  search.oninput = e => populate(e.target.value);
 }
 
 function renderFAQ() {
-  const c = t.content.faqPage;
   mainContent.innerHTML = `
-    <h1>${c.title}</h1>
-    ${t.faq.map(item=>`
+    <h1>${t.content.faqPage.title}</h1>
+    ${t.faq.map(item => `
       <div class="faq-item">
-        <h3>${item.q}</h3><p>${item.a}</p>
+        <h3>${item.q}</h3>
+        <p>${item.a}</p>
       </div>
     `).join('')}
   `;
 }
 
 function renderContact() {
-  const c = t.content.contactPage;
   mainContent.innerHTML = `
-    <h1>${c.title}</h1>
+    <h1>${t.content.contactPage.title}</h1>
     <div class="contact-card">
       <p>${t.content.home.contactCardText}</p>
       <ul>${t.content.home.contactCardList.map(li=>`<li>${li}</li>`).join('')}</ul>
@@ -183,5 +199,5 @@ function renderContact() {
   `;
 }
 
-// start:
+// kick off:
 loadTranslations(savedLang);
