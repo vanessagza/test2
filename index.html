@@ -10,19 +10,15 @@
 <body>
   <header class="site-header">
     <div class="logo-container">
-      <a href="#" id="logo-link" aria-label="Home">
-        <img src="logo.png" alt="OmniSyn Logo" class="logo"/>
-      </a>
+      <a href="#" id="logo-link"><img src="logo.png" alt="Logo" class="logo"/></a>
     </div>
     <nav class="site-nav" aria-label="Main navigation">
       <ul id="nav-list" class="nav-list"></ul>
     </nav>
-    <div class="lang-select-container">
-      <select id="lang-select">
-        <option value="en">EN</option>
-        <option value="es">ES</option>
-      </select>
-    </div>
+    <select id="lang-select" aria-label="Language selector">
+      <option value="en">English</option>
+      <option value="es">Español</option>
+    </select>
   </header>
 
   <main id="main-content" class="main-content" tabindex="-1"></main>
@@ -30,13 +26,7 @@
   <footer class="site-footer">
     <p>&copy; <span id="year"></span> OmniSyn Technologies.</p>
     <nav aria-label="Footer navigation">
-      <ul>
-        <li><a href="#" data-page="home">Home</a></li>
-        <li><a href="#" data-page="about">About Us</a></li>
-        <li><a href="#" data-page="services">Services</a></li>
-        <li><a href="#" data-page="faq">FAQ</a></li>
-        <li><a href="#" data-page="contact">Contact Us</a></li>
-      </ul>
+      <ul id="footer-nav"></ul>
     </nav>
   </footer>
 
