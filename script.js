@@ -1,126 +1,121 @@
 // script.js
-let translations = {};
-let currentLang = 'en';
-let currentPage = 'home';
+let t; // translation object
 
-async function loadTranslations() {
-  const [en, es] = await Promise.all([
-    fetch('en.json').then(r => r.json()),
-    fetch('es.json').then(r => r.json())
-  ]);
-  translations = { en, es };
+const navList     = document.getElementById('nav-list');
+const footerNav   = document.getElementById('footer-nav');
+const mainContent = document.getElementById('main-content');
+const yearSpan    = document.getElementById('year');
+const logoLink    = document.getElementById('logo-link');
+const langSelect  = document.getElementById('lang-select');
+
+// remember language
+const savedLang = localStorage.getItem('lang') || 'en';
+langSelect.value = savedLang;
+
+langSelect.addEventListener('change', () => {
+  localStorage.setItem('lang', langSelect.value);
+  loadTranslations(langSelect.value);
+});
+
+async function loadTranslations(lang) {
+  const res = await fetch(`translations/${lang}.json`);
+  t = await res.json();
+  init();
 }
 
-function t(path) {
-  return path.split('.').reduce((o, k) => o?.[k], translations[currentLang]) || '';
-}
-
-const navKeys = ['home','about','services','faq','contact'];
-
-async function main() {
-  await loadTranslations();
-
-  // language selector
-  const langSelect = document.getElementById('lang-select');
-  langSelect.value = currentLang;
-  langSelect.addEventListener('change', e => {
-    currentLang = e.target.value;
-    buildNav();
-    showPage(currentPage);
-  });
-
+function init() {
+  yearSpan.textContent = new Date().getFullYear();
   buildNav();
+  buildFooterNav();
   showPage('home');
-  document.getElementById('year').textContent = new Date().getFullYear();
-  // footer links
-  document.querySelectorAll('.site-footer [data-page]').forEach(a => {
-    a.addEventListener('click', e => {
-      e.preventDefault();
-      showPage(e.target.dataset.page);
-    });
-  });
+  logoLink.onclick = e => { e.preventDefault(); showPage('home'); };
 }
 
 function buildNav() {
-  const navList = document.getElementById('nav-list');
   navList.innerHTML = '';
-  navKeys.forEach(key => {
+  t.navItems.forEach(({ title, page }) => {
     const li = document.createElement('li');
-    li.textContent = t(`nav.${key}`);
-    li.dataset.page = key;
+    li.textContent = title;
+    li.dataset.page = page;
     navList.appendChild(li);
   });
-  navList.addEventListener('click', e => {
+  navList.onclick = e => {
     if (e.target.tagName === 'LI') showPage(e.target.dataset.page);
+  };
+}
+
+function buildFooterNav() {
+  footerNav.innerHTML = '';
+  t.navItems.forEach(({ title, page }) => {
+    const li = document.createElement('li');
+    li.innerHTML = `<a href="#" data-page="${page}">${title}</a>`;
+    footerNav.appendChild(li);
   });
-  document.getElementById('logo-link').addEventListener('click', e => {
-    e.preventDefault();
-    showPage('home');
-  });
+  footerNav.onclick = e => {
+    if (e.target.tagName === 'A') {
+      e.preventDefault();
+      showPage(e.target.dataset.page);
+    }
+  };
 }
 
 function showPage(page) {
-  currentPage = page;
-  document.querySelectorAll('#nav-list li').forEach(li => {
-    li.classList.toggle('active', li.dataset.page === page);
-  });
-  const main = document.getElementById('main-content');
-  main.classList.remove('visible');
+  Array.from(navList.children).forEach(li =>
+    li.classList.toggle('active', li.dataset.page === page)
+  );
+  mainContent.classList.remove('visible');
   setTimeout(() => {
-    switch(page) {
-      case 'home':    renderHome();    break;
-      case 'about':   renderAbout();   break;
-      case 'services':renderServices();break;
-      case 'faq':     renderFAQ();     break;
-      case 'contact': renderContact(); break;
-      default:        renderHome();
+    switch (page) {
+      case 'home':     renderHome();     break;
+      case 'about':    renderAbout();    break;
+      case 'services': renderServices(); break;
+      case 'faq':      renderFAQ();      break;
+      case 'contact':  renderContact();  break;
+      default:         renderHome();
     }
-    main.classList.add('visible');
-    main.focus();
+    mainContent.classList.add('visible');
+    mainContent.focus();
   }, 100);
 }
 
-// …=== RENDER FUNCTIONS BELOW, all using t(...) and arrays from translations[currentLang]…===
-
 function renderHome() {
-  const c = translations[currentLang];
-  document.getElementById('main-content').innerHTML = `
+  const c = t.content.home;
+  mainContent.innerHTML = `
     <section class="carousel">
       <div class="slides">
-        ${c.carousel.alt.map((_,i)=>`<img src="photo${i+1}.jpg" alt="${c.carousel.alt[i]}">`).join('')}
+        ${t.carouselAlts.map((alt,i)=>
+          `<img src="photo${i+1}.jpg" alt="${alt}">`
+        ).join('')}
       </div>
-      <button class="carousel-button prev" aria-label="Prev">&lt;</button>
-      <button class="carousel-button next" aria-label="Next">&gt;</button>
+      <button class="carousel-button prev">&lt;</button>
+      <button class="carousel-button next">&gt;</button>
     </section>
     <section>
-      <h1>${t('home.aboutHeading')}</h1>
-      <p>${t('home.aboutText')}</p>
+      <h1>${c.aboutTitle}</h1>
+      <p>${c.aboutText}</p>
     </section>
     <section>
-      <h1>${t('home.servicesHeading')}</h1>
+      <h1>${c.ourServicesTitle}</h1>
       <div class="services-grid">
-        ${c.servicesList.map(s => `
-          <div class="service-card">
-            <h3>${s.name}</h3>
-            <p>${s.description}</p>
-          </div>
-        `).join('')}
+        ${t.services.map(s=>
+          `<div class="service-card"><h3>${s.name}</h3><p>${s.description}</p></div>`
+        ).join('')}
       </div>
     </section>
     <section class="quote-section">
-      <h1>${t('home.quoteHeading')}</h1>
-      <p>${t('home.quoteText')}</p>
-      <ul>${t('home.quoteList').split('|').map(item=>`<li>${item}</li>`).join('')}</ul>
+      <h1>${c.getQuoteTitle}</h1>
+      <p>${c.getQuoteText}</p>
+      <ul>${c.getQuoteList.map(li=>`<li>${li}</li>`).join('')}</ul>
     </section>
     <section class="download-section">
       <button class="pdf-btn" onclick="window.open('OmniSyn_Services_Catalogue_2025.pdf','_blank')">
-        ${t('home.downloadButton')}
+        ${c.downloadButton}
       </button>
     </section>
     <section class="contact-card">
-      <h1>${t('home.contactHeading')}</h1>
-      <p>${t('home.contactText')}</p>
-      <ul>${t('home.contactList').split('|').map(item=>`<li>${item}</li>`).join('')}</ul>
+      <h1>${c.contactCardTitle}</h1>
+      <p>${c.contactCardText}</p>
+      <ul>${c.contactCardList.map(li=>`<li>${li}</li>`).join('')}</ul>
     </section>
   `;
   initCarousel();
@@ -128,62 +123,65 @@ function renderHome() {
 
 function initCarousel() {
   const slides = document.querySelector('.slides');
-  let idx = 0, total = slides.children.length;
-  document.querySelector('.prev').onclick = () => { idx=(idx-1+total)%total; slides.style.transform=`translateX(-${idx*100}%)`; };
-  document.querySelector('.next').onclick = () => { idx=(idx+1)%total; slides.style.transform=`translateX(-${idx*100}%)`; };
-  setInterval(()=>document.querySelector('.next').click(),5000);
+  const imgs = slides.children;
+  let idx = 0, total = imgs.length;
+  document.querySelector('.prev').onclick = () => { idx=(idx-1+total)%total; slides.style.transform=`translateX(-${100*idx}%)`; };
+  document.querySelector('.next').onclick = () => { idx=(idx+1)%total; slides.style.transform=`translateX(-${100*idx}%)`; };
+  setInterval(()=>{ idx=(idx+1)%total; slides.style.transform=`translateX(-${100*idx}%)`; },5000);
 }
 
-function renderAbout(){
-  document.getElementById('main-content').innerHTML = `
-    <h1>${t('about.heading')}</h1>
-    <p>${t('about.text')}</p>
-    <h2>${t('about.missionHeading')}</h2>
-    <p>${t('about.missionText')}</p>
-    <h2>${t('about.visionHeading')}</h2>
-    <p>${t('about.visionText')}</p>
+function renderAbout() {
+  const c = t.content.about;
+  mainContent.innerHTML = `
+    <h1>${c.title}</h1>
+    <p>${c.intro}</p>
+    <h2>${c.missionTitle}</h2>
+    <p>${c.missionText}</p>
+    <h2>${c.visionTitle}</h2>
+    <p>${c.visionText}</p>
   `;
 }
 
-function renderServices(){
-  document.getElementById('main-content').innerHTML = `
-    <h1>${t('servicesPage.heading')}</h1>
-    <input id="service-search" class="service-search" type="text" placeholder="${t('servicesPage.searchPlaceholder')}" aria-label="${t('servicesPage.searchPlaceholder')}">
+function renderServices() {
+  const c = t.content.servicesPage;
+  mainContent.innerHTML = `
+    <h1>${c.title}</h1>
+    <input id="service-search" class="service-search" placeholder="${c.searchPlaceholder}">
     <div id="services-grid" class="services-grid"></div>
   `;
   const grid = document.getElementById('services-grid');
-  const list = translations[currentLang].servicesList;
-  function populate(filter=''){
-    grid.innerHTML = '';
-    list.filter(s=>s.name.toLowerCase().includes(filter.toLowerCase()))
-        .forEach(s=>{
-          const div=document.createElement('div'); div.className='service-card';
-          div.innerHTML=`<h3>${s.name}</h3><p>${s.description}</p>`;
-          grid.appendChild(div);
-        });
+  document.getElementById('service-search').oninput = e => populate(e.target.value);
+  function populate(filter='') {
+    grid.innerHTML = t.services
+      .filter(s=>s.name.toLowerCase().includes(filter.toLowerCase()))
+      .map(s=>`<div class="service-card"><h3>${s.name}</h3><p>${s.description}</p></div>`)
+      .join('');
   }
   populate();
-  document.getElementById('service-search')
-          .addEventListener('input', e=>populate(e.target.value));
 }
 
-function renderFAQ(){
-  const items = translations[currentLang].faqPage.items;
-  document.getElementById('main-content').innerHTML = `
-    <h1>${t('faqPage.heading')}</h1>
-    ${items.map(i=>`<div class="faq-item"><h3>${i.q}</h3><p>${i.a}</p></div>`).join('')}
+function renderFAQ() {
+  const c = t.content.faqPage;
+  mainContent.innerHTML = `
+    <h1>${c.title}</h1>
+    ${t.faq.map(item=>`
+      <div class="faq-item">
+        <h3>${item.q}</h3><p>${item.a}</p>
+      </div>
+    `).join('')}
   `;
 }
 
-function renderContact(){
-  const c = translations[currentLang].home;
-  document.getElementById('main-content').innerHTML = `
+function renderContact() {
+  const c = t.content.contactPage;
+  mainContent.innerHTML = `
+    <h1>${c.title}</h1>
     <div class="contact-card">
-      <h1>${c.contactHeading}</h1>
-      <p>${c.contactText}</p>
-      <ul>${c.contactList.map(item=>`<li>${item}</li>`).join('')}</ul>
+      <p>${t.content.home.contactCardText}</p>
+      <ul>${t.content.home.contactCardList.map(li=>`<li>${li}</li>`).join('')}</ul>
     </div>
   `;
 }
 
-document.addEventListener('DOMContentLoaded', main);
+// start:
+loadTranslations(savedLang);
